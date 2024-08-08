@@ -1,0 +1,1 @@
+This is a fix for UEVR's final fantasy vii remake's movies. The 2d movies play in only 1 eye. This detects when the movies are playing and puts the game into 2d mode and sequential rendering. Then it kicks it back to vr mode and native rendering when movie is not playing.
