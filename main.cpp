@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "uevr/Plugin.hpp"
-#include "MediaPlayer.hpp"
+#include "GenericUObject.hpp"
 #include "main.h"
 
 
@@ -49,6 +49,28 @@ public:
     //*******************************************************************************************
     void on_xinput_get_state(uint32_t* retval, uint32_t user_index, XINPUT_STATE* state) 
     {
+		static bool ButtonsPressed = false;
+        
+        if(state != NULL) 
+        {
+            // Vibration flag, clear it on right trigger release.
+            if(ButtonsPressed == true) 
+            {
+                if(state->Gamepad.bLeftTrigger <= 100 && !(state->Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB))
+					ButtonsPressed = false;
+            }
+            
+            // Log the data
+            else 
+            {
+				if(state->Gamepad.bLeftTrigger >= 200 && (state->Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB)) 
+                {
+					ButtonsPressed = true;
+                    GenericUObject::log_instances_of(L"Class /Script/MediaAssets.MediaPlayer");
+				}
+            }
+        }
+        
     }
     
     void on_pre_engine_tick(API::UGameEngine* engine, float delta) 
@@ -57,11 +79,17 @@ public:
         static bool RenderingMovie = false;
 
         bool IsInMovie = false;
-        const auto MP = MediaPlayer::get_instance();
-        if(MP && MP->is_in_movie()) {
-            IsInMovie = true;
-        }
-        //API::get()->log_info("**Currently In Cinematic: %d", IsInMovie);
+        int i = 0;
+        do {
+            const auto MP = GenericUObject::get_instance_at_with_skip(i++, L"Class /Script/MediaAssets.MediaPlayer", L"/Menu/");
+            if(!MP) break;
+            if(MP && MP->call_bool_function(L"IsPlaying", L"Class /Script/MediaAssets.MediaPlayer"))
+            {
+                IsInMovie = true;
+                break;
+            }
+        } while(i<50);
+
         if(IsInMovie == true && RenderingMovie == false)
         {
             RenderingMovie = true;
